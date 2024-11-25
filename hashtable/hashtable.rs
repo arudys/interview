@@ -144,8 +144,9 @@ impl HashTable {
         match self.table[hash_index].as_mut() {
             None => return,
             Some(n) => {
-                // get_node_index
-                if n.key == key {
+                // If the node returned by get_node_index() is live,
+                // it always points to the specified key.
+                if n.live {
                     n.live = false;
                     self.len -= 1;
                 }
