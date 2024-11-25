@@ -41,6 +41,7 @@ fn NextWord(chars: &mut Chars) -> Option<String> {
     }
 }
 
+// Split a line into words and insert in the hashtable.
 fn InsertLine(h: &mut hashtable::HashTable, line: &String) {
     let mut chars = line.chars();
 
@@ -95,5 +96,4 @@ fn main() -> std::io::Result<()> {
     println!("Len: {}", h.len());
 
     Ok(())
-    // println!("Hashtable: {:#?}", h);
 }

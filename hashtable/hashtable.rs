@@ -2,66 +2,6 @@
 
 use std::hash::{Hash, Hasher, DefaultHasher};
 use std::collections::VecDeque;
-// use std::rc::Rc;
-// use std::cell::RefCell;
-
-// pub struct List {
-//     front: Option<Rc<RefCell<ListNode>>>,
-//     back: Option<Rc<RefCell<ListNode>>>,
-// }
-
-// impl List {
-//     pub fn new() -> List {
-//         List {front: None, back: None}
-//     }
-
-//     pub fn front(&self) -> Option<Rc<RefCell<ListNode>>> {
-//         Some(self.front.clone()?)
-//     }
-
-//     pub fn back(&self) -> Option<Rc<RefCell<ListNode>>> {
-//         Some(self.back.clone()?)
-//     }
-
-//     pub fn push_back(&mut self, node: &mut Rc<RefCell<ListNode>>) {
-//         match self.back.take() {
-//             None => {
-//                 self.front = Some(node.clone());
-//                 self.back = Some(node.clone());
-//             }
-//             Some(n) => {
-//                 n.borrow_mut().forward = Some(node.clone());
-//                 node.borrow_mut().reverse = Some(n.clone());
-//                 self.back = Some(node.clone());
-//             }
-//         }
-//     }
-
-//     pub fn remove(&mut self, node: &mut Rc<RefCell<ListNode>>) {
-//         if node.borrow().forward.is_some() {
-//             match node.borrow().reverse {
-//                 None => node.borrow().forward.as_mut().unwrap().borrow_mut().reverse = None,
-//                 Some(_) => {
-//                     node.borrow().forward.as_mut().unwrap().borrow_mut().reverse = Some(node.borrow().reverse.unwrap().clone());
-//                 }
-//             }
-//         }
-//         if node.borrow().reverse.is_some() {
-//         }
-//     }
-// }
-
-// pub struct ListNode {
-//     hash_index: usize,
-//     forward: Option<Rc<RefCell<ListNode>>>,
-//     reverse: Option<Rc<RefCell<ListNode>>>,
-// }
-
-// impl ListNode {
-//     pub fn new(hash_index: usize) -> ListNode {
-//         ListNode { hash_index: hash_index, forward: None, reverse: None, }
-//     }
-// }
 
 #[derive(Debug)]
 pub struct HashTable {
@@ -93,6 +33,7 @@ impl HashTable {
         }
     }
 
+    // Gets the default hash index of the key.
     fn get_hash_index(&self, key: &String) -> usize {
         let mut hasher = DefaultHasher::new();
 
@@ -100,6 +41,13 @@ impl HashTable {
         hasher.finish() as usize % self.table.len()
     }
 
+    // Gets the node index of a specified key:
+    // If the key is in the table and live, return that index.
+    // Otherwise, return the first free index (a free index is either
+    // None or Some but not live).
+    //
+    // Returns None if the key is not in the table and there is no
+    // free slot in the table.
     fn get_node_index(&self, key: &String) -> Option<usize> {
         let orig_hash_index = self.get_hash_index(key);
         let mut hash_index = orig_hash_index;
@@ -109,6 +57,9 @@ impl HashTable {
         loop {
             let nod = &self.table[hash_index];
             match nod {
+                // hash nodes only ever go None ==> Some, never Some
+                // ==> None. This means once we encounter a None, we
+                // know we can stop looping.
                 None => return Some(if has_free { first_free } else { hash_index }),
                 Some(n) => if n.key == *key {
                     if n.live || !has_free {
@@ -126,7 +77,7 @@ impl HashTable {
             hash_index = hash_index % self.table.len();
 
             if hash_index == orig_hash_index {
-                // We've looped and found now matching or empty slots. See if
+                // We've looped and found no matching or empty slots. See if
                 // there's a slot we can reclaim.
                 if has_free {
                     return Some(first_free);
@@ -165,6 +116,7 @@ impl HashTable {
         self.mod_history.push_back(hash_index);
     }
 
+    // Gets the node for a given key, or None if the key is not in the table.
     fn get_node(&self, key: &String) -> Option<&HashNode> {
         let hash_index = self.get_node_index(key)?;
 
@@ -175,10 +127,12 @@ impl HashTable {
         self.table[hash_index].as_ref()
     }
 
+    // Gets the value for a given key, or None if the key is not in the table.
     pub fn get(&self, key: &String) -> Option<i64> {
         return Some(self.get_node(&key)?.value);
     }
 
+    // Remove a key from the table.
     pub fn remove(&mut self, key: String) {
         let hash_index_opt = self.get_node_index(&key);
         if hash_index_opt.is_none() {
@@ -190,8 +144,11 @@ impl HashTable {
         match self.table[hash_index].as_mut() {
             None => return,
             Some(n) => {
-                n.live = false;
-                self.len -= 1;
+                // get_node_index
+                if n.key == key {
+                    n.live = false;
+                    self.len -= 1;
+                }
             }
         }
     }
