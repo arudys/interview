@@ -41,13 +41,12 @@ impl HashTable {
         hasher.finish() as usize % self.table.len()
     }
 
-    // Gets the node index of a specified key:
-    // If the key is in the table and live, return that index.
-    // Otherwise, return the first free index (a free index is either
-    // None or Some but not live).
+    // Gets the node index of a specified key: If the key is in the table and
+    // live, return that index.  Otherwise, return the first free index (a free
+    // index is either None or Some but not live).
     //
-    // Returns None if the key is not in the table and there is no
-    // free slot in the table.
+    // Returns None if the key is not in the table and there is no free slot in
+    // the table.
     fn get_node_index(&self, key: &String) -> Option<usize> {
         let orig_hash_index = self.get_hash_index(key);
         let mut hash_index = orig_hash_index;
@@ -57,9 +56,13 @@ impl HashTable {
         loop {
             let nod = &self.table[hash_index];
             match nod {
-                // hash nodes only ever go None ==> Some, never Some
-                // ==> None. This means once we encounter a None, we
-                // know we can stop looping.
+                // hash nodes only ever go None ==> Some, never Some ==>
+                // None. This means once we encounter a None, we know we can
+                // stop looping.
+                //
+                // ALTERNATIVE: if each Node knew the index of the next and
+                // previous node which matched a hash, this would be faster
+                // (basically, linked-list-via-array-indices).
                 None => return Some(if has_free { first_free } else { hash_index }),
                 Some(n) => if n.key == *key {
                     if n.live || !has_free {
@@ -106,6 +109,10 @@ impl HashTable {
 
                 // O(n) operation. Making this O(1) would require a custom
                 // double-linked list, which is Hard(tm) in Rust.
+                //
+                // ALTERNATIVE: we could implement the linked list as a vector,
+                // using indices in the place of pointers so rust doesn't get
+                // upset.
                 self.mod_history.retain(|&x| x != hash_index);
                 n.key = key;
                 n.value = value;
@@ -144,8 +151,8 @@ impl HashTable {
         match self.table[hash_index].as_mut() {
             None => return,
             Some(n) => {
-                // If the node returned by get_node_index() is live,
-                // it always points to the specified key.
+                // If the node returned by get_node_index() is live, it always
+                // points to the specified key.
                 if n.live {
                     n.live = false;
                     self.len -= 1;
